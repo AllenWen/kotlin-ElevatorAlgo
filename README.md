@@ -1,2 +1,2 @@
-# kotlin-ElevatorAlgo
-Implement elevator's algorithm using kotlin on android platform
+# kotlin-ElevatorSimulator
+Simulate the elevator's working process using kotlin on android platform
