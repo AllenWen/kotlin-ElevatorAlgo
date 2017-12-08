@@ -1,17 +1,17 @@
 package cn.allen.elevator
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
+import android.widget.RadioGroup
+import cn.allen.elevator.Extension.showToast
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.find
-import org.jetbrains.anko.toast
-
 
 /**
  * Author: AllenWen
@@ -21,8 +21,8 @@ import org.jetbrains.anko.toast
  */
 
 class MainActivity : AppCompatActivity() {
-
-    var mList: MutableList<Int> = MutableList(2, { return@MutableList it })
+    private var elevatorNum: Int = 0
+    private var floorNum: Int = 10
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,36 +36,67 @@ class MainActivity : AppCompatActivity() {
             if (item?.itemId == R.id.action_settings) showSettings()
             return@setOnMenuItemClickListener true
         }
-        recyclerview.layoutManager = LinearLayoutManager(this)
-        recyclerview.adapter = FloorAdapter(mList)
+        start.setOnClickListener { _ -> startElevator() }
+        stop.setOnClickListener { _ -> stopElevator() }
+    }
+
+    /**
+     * 停止电梯
+     */
+    private fun stopElevator() {
+
+    }
+
+    /**
+     * 启动电梯
+     */
+    private fun startElevator() {
+
     }
 
     private fun showSettings() {
+        val view = layoutInflater.inflate(R.layout.dialog_settings, null)
+        val elevatorView: RadioGroup = view.find(R.id.elevator_num)
+        elevatorView.setOnCheckedChangeListener { _, checkedId ->
+            elevatorNum = when (checkedId) {
+                R.id.elevator_one -> 1
+                R.id.elevator_two -> 2
+                R.id.elevator_three -> 3
+                else -> 0
+            }
+        }
+        val floorView: EditText = view.find(R.id.floor_num)
         val builder = AlertDialog.Builder(this@MainActivity, R.style.dialog_style)
         builder.setTitle(R.string.select_param)
-        val view = layoutInflater.inflate(R.layout.dialog_settings, null)
-        val elevator_num: EditText = view.find(R.id.elevator_num)
-        val floor_num: EditText = view.find(R.id.floor_num)
         builder.setView(view)
         builder.setNegativeButton(R.string.cancel, null)
-        builder.setPositiveButton(R.string.confirm, DialogInterface.OnClickListener { dialog, which ->
-            val str1: String = elevator_num.text.trim() as String
-            val num1 = str1.toInt()
-            val str2: String = floor_num.text.trim() as String
-            val num2 = str2.toInt()
-            if (num1 > 0 && num2 > 0) {
-                //TODO
+        builder.setPositiveButton(R.string.confirm, { _, _ ->
+            val floorStr: String? = floorView.text.trim().toString()
+            floorNum = if (floorStr.isNullOrEmpty()) 0 else floorStr!!.toInt()
+            if (elevatorNum > 0 && floorNum > 0) {
+                resetElevator()
             } else {
-                toast(R.string.set_param_error)
+                showToast(R.string.set_param_error)
             }
         })
         builder.show()
+    }
+
+    private fun resetElevator() {
+        stopElevator()
+        container.removeAllViews()
+        for (i in 0 until elevatorNum) {
+            val recyclerView = RecyclerViewCompat(this)
+            val list: MutableList<Int> = MutableList(floorNum, { return@MutableList it + 1 }).asReversed()
+            recyclerView.layoutManager = LinearLayoutManager(this)
+            recyclerView.adapter = FloorAdapter(list)
+            container.addView(recyclerView)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
-
 
 }

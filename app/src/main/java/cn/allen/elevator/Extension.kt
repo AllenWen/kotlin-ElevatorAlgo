@@ -1,6 +1,6 @@
 package cn.allen.elevator
 
-import android.content.Context
+import android.app.Activity
 import android.widget.Toast
 
 /**
@@ -9,12 +9,14 @@ import android.widget.Toast
  * Email: wenxueguo@medlinker.com
  * Description:常用扩展函数
  */
-class Extension {
-    fun Context.toast(msg: String) {
+object Extension {
+
+    fun Activity.showToast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
-    fun Context.toast(msg: Int) {
+    fun Activity.showToast(msg: Int) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
+
 }
