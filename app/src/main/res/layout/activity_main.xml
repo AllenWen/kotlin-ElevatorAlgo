@@ -23,9 +23,9 @@
         android:layout_height="wrap_content">
 
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -47,13 +47,11 @@
                     android:text="@string/stop" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/container"
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginTop="10dp"
-                android:gravity="center_horizontal"
-                android:orientation="horizontal" />
+                android:layout_margin="10dp" />
         </LinearLayout>
 
     </android.support.v4.widget.NestedScrollView>

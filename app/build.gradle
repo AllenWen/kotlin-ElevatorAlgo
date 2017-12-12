@@ -43,5 +43,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     //anko
     implementation "org.jetbrains.anko:anko-common:$anko_version"
-
+    //rxjava
+    compile "io.reactivex.rxjava2:rxjava:$rxjava_version"
+    //rxandroid
+    compile "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
 }

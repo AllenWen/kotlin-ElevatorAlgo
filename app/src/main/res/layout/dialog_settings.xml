@@ -24,6 +24,7 @@
             android:text="@string/elevator_one" />
 
         <RadioButton
+            android:enabled="false"
             android:id="@+id/elevator_two"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -31,6 +32,7 @@
             android:text="@string/elevator_two" />
 
         <RadioButton
+            android:enabled="false"
             android:id="@+id/elevator_three"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
