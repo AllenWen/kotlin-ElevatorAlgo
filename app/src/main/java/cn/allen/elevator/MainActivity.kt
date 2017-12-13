@@ -15,6 +15,7 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.find
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit
  */
 
 class MainActivity : AppCompatActivity() {
+    private val TAG: String = "MainActivity"
     private var elevatorNum: Int = 0
     private var floorNum: Int = 10
     private var mList: MutableList<Elevator> = MutableList(floorNum, {
@@ -35,8 +37,10 @@ class MainActivity : AppCompatActivity() {
         }
     }).asReversed()
     private var mAdapter: FloorAdapter = FloorAdapter(mList)
-    private var currentFloor: Int = floorNum - 1
-    private var disposable: Disposable? = null
+    private var currentIndex: Int = floorNum - 1
+    private var elevatorRunner: Disposable? = null//运行电梯
+    private var taskRunner: Disposable? = null//派发任务
+    private var canTakeNew: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,53 +64,109 @@ class MainActivity : AppCompatActivity() {
      * 停止电梯
      */
     private fun stopElevator() {
-        if (disposable != null && !disposable!!.isDisposed) disposable!!.dispose()
-        start.isEnabled=true
-        stop.isEnabled=false
+        if (elevatorRunner != null && !elevatorRunner!!.isDisposed) elevatorRunner!!.dispose()
+        canTakeNew = false
+        start.isEnabled = true
+        stop.isEnabled = false
     }
 
     /**
      * 启动电梯
      */
     private fun startElevator() {
-        //电梯运行
-        disposable = Flowable.interval(1000, TimeUnit.MILLISECONDS)
+        canTakeNew = true
+        taskRunner = Flowable.interval(4000, TimeUnit.MILLISECONDS)
+                .filter { canTakeNew }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext {
-                    if (currentFloor > floorNum - 1) {
-                        currentFloor = floorNum - 1
+                    canTakeNew = false
+                    //真实世界楼层
+                    val floor: Int = Random().nextInt(floorNum) + 1
+                    var destination: Int = Random().nextInt(floorNum) + 1
+                    //不允许当前楼层和目的楼层相同
+                    while (floor == destination) {
+                        destination = Random().nextInt(floorNum) + 1
                     }
-                    if (currentFloor < 0) {
-                        currentFloor = 0
-                    }
-                    var elevator: Elevator = mList[currentFloor]
-                    if (currentFloor == floorNum - 1) {
-                        elevator.direction = 0
-                    } else if (currentFloor == 0) {
-                        elevator.direction = 1
-                    }
-                    mList[currentFloor].isRunning = false
-                    if (elevator.direction == 0) {
-                        currentFloor -= 1
-                    } else {
-                        currentFloor += 1
-                    }
-                    mList[currentFloor].isRunning = true
-                    mList[currentFloor].direction = elevator.direction
+                    //实际楼层index
+                    val floorIndex: Int = floorNum - floor
+                    val destinationIndex: Int = floorNum - destination
+                    //计算出运行方向
+                    val direction: Int = if (destinationIndex - floorIndex > 0) 1 else 0
+                    showToast("现在有人在 $floor 楼，他想去 $destination 楼")
+                    //执行任务
+                    executeTask(EleTask(floor, floorIndex, destination, destinationIndex, direction))
                 }
                 .doOnNext { mAdapter.notifyDataSetChanged() }
                 .subscribe()
 
-//        var random: Random = Random()
-//        while (true){
-//            sleep(500)
-//            var s: Int = random.nextInt(floorNum)+1
-//            println(s)
-//        }
+        start.isEnabled = false
+        stop.isEnabled = true
+    }
 
-        start.isEnabled=false
-        stop.isEnabled=true
+    private fun executeTask(task: EleTask) {
+        when {
+            currentIndex - task.floorIndex > 0 -> //向上接人
+                mList[currentIndex].direction = 0
+            currentIndex - task.floorIndex < 0 -> //向下接人
+                mList[currentIndex].direction = 1
+            else -> {
+
+            }
+        }
+        //电梯运行
+        elevatorRunner = Flowable.interval(750, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .filter {
+                    //如果送到，就停止运行
+                    if (currentIndex == task.destinationIndex && task.isPickup) {
+                        showToast("已将此人从 ${task.floor} 楼送到 ${task.destination} 楼")
+                        elevatorRunner!!.dispose()
+                        canTakeNew = true
+                        false
+                    } else {
+                        true
+                    }
+                }
+                .doOnNext {
+                    //边界控制
+                    if (currentIndex > floorNum - 1) {
+                        currentIndex = floorNum - 1
+                    }
+                    if (currentIndex < 0) {
+                        currentIndex = 0
+                    }
+                    //到达边界后方向调整
+                    val elevator: Elevator = mList[currentIndex]
+                    if (currentIndex == floorNum - 1) {
+                        elevator.direction = 0
+                    } else if (currentIndex == 0) {
+                        elevator.direction = 1
+                    }
+                    mList[currentIndex].isRunning = false
+                    //计划电梯的下一步
+                    if (currentIndex == task.floorIndex) {//如果到达乘客的位置
+                        task.isPickup = true
+                        if (task.direction == 0) {
+                            currentIndex -= 1
+                        } else {
+                            currentIndex += 1
+                        }
+                        mList[currentIndex].isRunning = true
+                        mList[currentIndex].direction = task.direction
+                    } else {//尚未到达乘客的位置
+                        if (elevator.direction == 0) {
+                            currentIndex -= 1
+                        } else {
+                            currentIndex += 1
+                        }
+                        mList[currentIndex].isRunning = true
+                        mList[currentIndex].direction = elevator.direction
+                    }
+                }
+                .doOnNext { mAdapter.notifyDataSetChanged() }
+                .subscribe()
     }
 
     private fun showSettings() {
@@ -148,7 +208,7 @@ class MainActivity : AppCompatActivity() {
             }
         }).asReversed())
         mAdapter.notifyDataSetChanged()
-        currentFloor = floorNum - 1
+        currentIndex = floorNum - 1
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
