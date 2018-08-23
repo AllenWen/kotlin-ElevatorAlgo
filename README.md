@@ -5,9 +5,9 @@
 ## Preview
 * Run elevator<br>
 <img src="https://github.com/AllenWen/kotlin-ElevatorSimulator/blob/master/images/20171213_153115.gif" width="35%" height="35%"/>
-<br><br>
+
 * Configure elevator parameters<br>
 <img src="https://github.com/AllenWen/kotlin-ElevatorSimulator/blob/master/images/20171213_152923.gif" width="35%" height="35%"/>
-<br><br>
+
 ## Contributor
 * AllenWen
